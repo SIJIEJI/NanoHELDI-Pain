@@ -1,0 +1,33 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python tools/release_check.py
+      - run: python tools/write_checksums.py --check
+      - run: python examples/make_synthetic_data.py --output /tmp/nanoheldi-synthetic
+      - run: >-
+          nanoheldi-evaluate classification
+          --input examples/data/synthetic_classification.csv
+          --target target
+          --features 10
+          --folds 3
+          --models LR MLP
+          --output results/ci_classification
+      - run: >-
+          nanoheldi-plot
+          --summary results/ci_classification/summary_metrics.csv
+          --folds results/ci_classification/fold_metrics.csv
+          --output results/ci_classification/model_comparison
+      - run: pytest -q

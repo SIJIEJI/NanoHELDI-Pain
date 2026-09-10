@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the associated manuscript."
+title: "NanoHELDI-MS machine-learning analysis"
+type: software
+version: 0.1.0
+date-released: 2026-09-09
+authors:
+  - family-names: "Ji"
+    given-names: "Sijie"
+repository-code: "https://github.com/SIJIEJI/NanoHELDI-Pain"
+license: MIT

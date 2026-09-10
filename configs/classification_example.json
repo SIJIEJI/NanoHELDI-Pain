@@ -1,0 +1,10 @@
+{
+  "task": "classification",
+  "participant_column": "participant_id",
+  "sample_column": "sample_id",
+  "feature_prefix": "mz_",
+  "n_features": 50,
+  "n_splits": 5,
+  "primary_metric": "balanced_accuracy",
+  "random_state_policy": "fixed at 42 for estimator reproducibility; never searched"
+}

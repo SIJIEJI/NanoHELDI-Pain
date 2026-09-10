@@ -35,7 +35,7 @@ def load_analysis_table(
     sample_column: str = "sample_id",
     feature_prefix: str = "mz_",
 ) -> AnalysisData:
-    """Load one row per biological observation and enforce publication invariants."""
+    """Load an observation-level table and enforce publication invariants."""
     path = Path(path).expanduser().resolve()
     table = pd.read_csv(path)
     required = {target_column, participant_column, sample_column}
@@ -50,7 +50,11 @@ def load_analysis_table(
     if table[target_column].isna().any():
         raise ValueError("Target values cannot be missing")
 
-    feature_names = [str(column) for column in table.columns if str(column).startswith(feature_prefix)]
+    feature_names = [
+        str(column)
+        for column in table.columns
+        if str(column).startswith(feature_prefix)
+    ]
     if not feature_names:
         raise ValueError(f"No feature columns start with {feature_prefix!r}")
 

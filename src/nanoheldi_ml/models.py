@@ -6,11 +6,12 @@ from collections import OrderedDict
 
 from sklearn.base import BaseEstimator
 from sklearn.dummy import DummyClassifier, DummyRegressor
-from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
+from sklearn.ensemble import AdaBoostClassifier, GradientBoostingClassifier, RandomForestClassifier
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
@@ -157,6 +158,115 @@ def regression_models(n_features: int) -> OrderedDict:
                             ),
                         ),
                     ]
+                ),
+            ),
+        ]
+    )
+
+
+def _manuscript_pipeline(estimator: BaseEstimator) -> Pipeline:
+    """Preprocessing used by the manuscript holdout protocol."""
+    return Pipeline(
+        [
+            ("imputer", SimpleImputer(strategy="median")),
+            ("scaler", StandardScaler()),
+            ("model", estimator),
+        ]
+    )
+
+
+def manuscript_classification_models(include_xgboost: bool = True) -> OrderedDict:
+    """Return the random baseline and ten supervised classifiers named in the manuscript."""
+    state = REPRODUCIBILITY_RANDOM_STATE
+    models = OrderedDict(
+        [
+            (
+                "Random",
+                _manuscript_pipeline(
+                    DummyClassifier(strategy="stratified", random_state=state)
+                ),
+            ),
+            ("NB", _manuscript_pipeline(GaussianNB())),
+            ("DT", _manuscript_pipeline(DecisionTreeClassifier(random_state=state))),
+            (
+                "LR",
+                _manuscript_pipeline(
+                    LogisticRegression(max_iter=1000, random_state=state)
+                ),
+            ),
+            (
+                "GB",
+                _manuscript_pipeline(GradientBoostingClassifier(random_state=state)),
+            ),
+            (
+                "SVM",
+                _manuscript_pipeline(SVC(kernel="rbf", random_state=state)),
+            ),
+            (
+                "RF",
+                _manuscript_pipeline(
+                    RandomForestClassifier(random_state=state, n_jobs=1)
+                ),
+            ),
+            (
+                "AdaBoost",
+                _manuscript_pipeline(AdaBoostClassifier(random_state=state)),
+            ),
+            ("KNN", _manuscript_pipeline(KNeighborsClassifier())),
+            (
+                "MLP",
+                _manuscript_pipeline(
+                    MLPClassifier(
+                        hidden_layer_sizes=(100,),
+                        activation="relu",
+                        solver="adam",
+                        random_state=state,
+                    )
+                ),
+            ),
+        ]
+    )
+    if include_xgboost:
+        try:
+            from xgboost import XGBClassifier
+        except ImportError as exc:
+            raise ImportError(
+                "The manuscript model set requires XGBoost; install '.[xgboost]'"
+            ) from exc
+        models["XGBoost"] = _manuscript_pipeline(
+            XGBClassifier(
+                eval_metric="mlogloss",
+                random_state=state,
+                n_jobs=1,
+                verbosity=0,
+            )
+        )
+    return models
+
+
+def manuscript_regression_models() -> OrderedDict:
+    """Return the baseline and MLP regressor used by the manuscript holdout protocol."""
+    state = REPRODUCIBILITY_RANDOM_STATE
+    return OrderedDict(
+        [
+            (
+                "Mean",
+                Pipeline(
+                    [
+                        ("imputer", SimpleImputer(strategy="median")),
+                        ("model", DummyRegressor(strategy="mean")),
+                    ]
+                ),
+            ),
+            (
+                "MLP",
+                _manuscript_pipeline(
+                    MLPRegressor(
+                        hidden_layer_sizes=(100,),
+                        activation="relu",
+                        solver="adam",
+                        random_state=state,
+                    )
                 ),
             ),
         ]

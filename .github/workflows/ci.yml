@@ -30,4 +30,23 @@ jobs:
           --summary results/ci_classification/summary_metrics.csv
           --folds results/ci_classification/fold_metrics.csv
           --output results/ci_classification/model_comparison
+      - run: >-
+          nanoheldi-evaluate manuscript-classification
+          --input examples/data/synthetic_classification.csv
+          --target target
+          --training-cv-folds 3
+          --models LR MLP
+          --output results/ci_manuscript_classification
+      - run: >-
+          nanoheldi-manuscript-plot classification
+          --run results/ci_manuscript_classification
+          --output results/ci_manuscript_classification/figures
+      - run: python tools/verify_run.py results/ci_manuscript_classification
+      - run: >-
+          python scripts/run_feature_count_analysis.py classification
+          --input examples/data/synthetic_classification.csv
+          --target target
+          --counts 5 10
+          --folds 3
+          --output results/ci_feature_curve
       - run: pytest -q

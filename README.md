@@ -2,19 +2,16 @@
 
 This repository provides the installable Python source code, command-line tools,
 tests, and a small synthetic dataset for the NanoHELDI-MS pain-study machine-learning
-workflow. It is a publication-oriented replacement for the historical analysis
-scripts. No compiled binary is required.
+workflow. No compiled binary is required.
 
-The workflow uses participant-grouped cross-validation. Imputation, scaling, and
-feature selection are fitted only on each training fold, and all candidate models use
-the same held-out folds. Fold-level scores, out-of-fold predictions, split assignments,
-selected features, fitted pipelines, software versions, and input hashes are saved for
-inspection.
+The manuscript workflow uses a participant-level 80:20 train/test partition followed
+by grouped cross-validation within the training partition. Imputation, scaling, and
+feature ranking are fitted from training data only. Split assignments, fold-level
+scores, test predictions, ROC coordinates, confusion matrices, fitted pipelines,
+software versions, and input hashes are saved for inspection.
 
 > **Scope.** The included data are simulated and have no biological meaning. Raw or
-> participant-level study data are not included. Internal cross-validation does not
-> establish external generalization, and this software does not prevent overfitting
-> caused by a small or unrepresentative cohort.
+> participant-level study data are not included.
 
 ## Repository contents
 
@@ -24,6 +21,8 @@ inspection.
 | [`examples/data`](examples/data) | Included classification and regression demo CSV files |
 | [`examples/make_synthetic_data.py`](examples/make_synthetic_data.py) | Script that generated the demo files |
 | [`scripts/run_classification_panels.py`](scripts/run_classification_panels.py) | Batch runner for three classification outcomes |
+| [`scripts/run_feature_count_analysis.py`](scripts/run_feature_count_analysis.py) | Fold-local ANOVA/MI feature-count analysis |
+| [`scripts/run_interpretability.py`](scripts/run_interpretability.py) | SHAP and integrated-gradients analysis for saved MLPs |
 | [`tests`](tests) | Automated tests for grouping, artifacts, and metrics |
 | [`docs/METHODS.md`](docs/METHODS.md) | Analysis design and statistical safeguards |
 | [`docs/VALIDATION_REPORT.md`](docs/VALIDATION_REPORT.md) | Local validation record |
@@ -58,6 +57,7 @@ dependencies, including SciPy and Matplotlib support packages.
 | Matplotlib | `>=3.7,<4` | 3.7.2; 3.11.1 |
 | joblib | `>=1.2,<2` | 1.2.0; 1.6.0 |
 | XGBoost (optional) | `>=2.0,<4` | 3.2.0 |
+| SHAP (optional) | `>=0.44,<1` | 0.51.0 |
 | pytest (development only) | `>=7,<9` | available through the `dev` extra |
 | Ruff (development only) | `>=0.6,<1` | available through the `dev` extra |
 
@@ -81,6 +81,7 @@ model is needed:
 ```bash
 python -m pip install ".[dev]"
 python -m pip install ".[xgboost]"        # optional
+python -m pip install ".[explain]"        # optional SHAP/IG workflow
 ```
 
 Alternatively, create the tested Python 3.11 Conda environment:
@@ -96,6 +97,8 @@ Confirm the installation:
 ```bash
 nanoheldi-evaluate --help
 nanoheldi-plot --help
+nanoheldi-manuscript-plot --help
+nanoheldi-explain --help
 ```
 
 On the tested desktop, a clean `pip install .` including downloaded dependencies took
@@ -205,8 +208,10 @@ The generator refuses to overwrite existing CSV files unless `--overwrite` is su
 
 ### Input table
 
-Supply a deidentified CSV with one row per biological observation after averaging
-technical replicates. The default schema is:
+Supply the deidentified observation-level matrix used for analysis. Each row may be a
+measurement, visit, or prespecified replicate-level observation, but its participant
+must be identified so that related rows cannot cross evaluation partitions. The
+default schema is:
 
 ```text
 sample_id,participant_id,target,mz_124.97,mz_129.06,...
@@ -224,7 +229,93 @@ sample_id,participant_id,target,mz_124.97,mz_129.06,...
 
 See [`data/README.md`](data/README.md) for validation rules and privacy guidance.
 
-### Classification
+### Manuscript classification protocol
+
+This command uses all supplied `mz_` features, creates a participant-disjoint 80:20
+training/test partition, and compares the requested models by 10-fold grouped
+cross-validation in the training partition. The independent test partition is scored
+only after model fitting. Install the `xgboost` extra to include the complete candidate
+set used by this command.
+
+```bash
+nanoheldi-evaluate manuscript-classification \
+  --input data/deidentified_analysis.csv \
+  --target headache \
+  --test-fraction 0.2 \
+  --training-cv-folds 10 \
+  --include-xgboost \
+  --output results/headache_manuscript
+
+nanoheldi-manuscript-plot classification \
+  --run results/headache_manuscript \
+  --output results/headache_manuscript/figures
+```
+
+The model-comparison figure displays every cross-validation fold as an individual
+point over the mean and SD. The same plotting command also generates test ROC curves
+and the confusion matrix for the model selected by training-CV macro one-vs-rest AUC.
+
+### Manuscript regression protocol
+
+```bash
+nanoheldi-evaluate manuscript-regression \
+  --input data/deidentified_analysis.csv \
+  --target headache_severity \
+  --test-fraction 0.2 \
+  --training-cv-folds 10 \
+  --models MLP \
+  --tolerance 2 \
+  --output results/headache_severity_manuscript
+
+nanoheldi-manuscript-plot regression \
+  --run results/headache_severity_manuscript \
+  --model MLP \
+  --output results/headache_severity_manuscript/predicted_vs_observed
+```
+
+Regression reports MAE, RMSE, R², and the fraction of independent test predictions
+within the declared ±2-unit tolerance.
+
+### Feature-count curves
+
+The following command reproduces the 10/20/30/40/50-feature analysis pattern. ANOVA F
+and mutual information are recomputed inside each training fold before the top-ranked
+features are selected, so validation observations do not influence the ranking.
+
+```bash
+python scripts/run_feature_count_analysis.py classification \
+  --input data/deidentified_analysis.csv \
+  --target headache \
+  --counts 10 20 30 40 50 \
+  --folds 5 \
+  --output results/headache_feature_curve
+
+nanoheldi-manuscript-plot feature-curve \
+  --summary results/headache_feature_curve/feature_curve_summary.csv \
+  --metric accuracy \
+  --output results/headache_feature_curve/accuracy_by_feature_count
+```
+
+### MLP interpretation
+
+After a manuscript evaluation has saved its training-only MLP pipeline, SHAP and
+integrated gradients can be calculated for at most 100 designated test observations.
+This step reads the frozen model and split IDs and does not refit the estimator or
+alter its test predictions.
+
+```bash
+nanoheldi-explain \
+  --input data/deidentified_analysis.csv \
+  --target headache \
+  --model results/headache_manuscript/models/MLP.joblib \
+  --max-test-samples 100 \
+  --output results/headache_manuscript/mlp_interpretability
+```
+
+### General grouped-CV interface
+
+The original interface remains available for analyses that require a user-specified
+feature count and grouped cross-validation without a separate test partition:
 
 ```bash
 nanoheldi-evaluate classification \
@@ -248,7 +339,7 @@ nanoheldi-evaluate classification \
   --output results/headache_5fold_xgboost
 ```
 
-### Regression
+### General grouped-CV regression
 
 ```bash
 nanoheldi-evaluate regression \
@@ -265,7 +356,7 @@ Regression reports MAE, RMSE, conventional R², and the fraction of predictions 
 the declared tolerance. The tolerance-based value is secondary and should not replace
 continuous-error metrics.
 
-### Three classification panels
+### Batch general grouped-CV classification
 
 ```bash
 python scripts/run_classification_panels.py \
@@ -281,7 +372,7 @@ With nine model families, three targets, and five folds, this saves 135 fitted f
 pipelines. Full-data candidates are stored separately and are never used to calculate
 the plotted validation scores.
 
-### Validate and plot a completed run
+### Validate and plot a general grouped-CV run
 
 ```bash
 python tools/verify_run.py results/headache_5fold
@@ -301,12 +392,12 @@ participants and describe error bars as variation across folds.
 1. Install the package and optional XGBoost dependency as described above.
 2. Place the approved, deidentified analysis table under `data/`. Do not commit direct
    identifiers, collection dates, or restricted study data.
-3. Run the classification and regression commands with the prespecified targets,
-   feature count, folds, and model families from the analysis plan.
-4. Run `python tools/verify_run.py <result-directory>` for every result directory.
-5. Generate figures only from the frozen `summary_metrics.csv` and `fold_metrics.csv`
-   files.
-6. Record the git commit, input SHA-256 from `run_metadata.json`, and output directory
+3. Run the `manuscript-classification` and `manuscript-regression` commands with the
+   prespecified targets and model families from the analysis plan.
+4. Run `python tools/verify_run.py <result-directory>` for every model-evaluation run.
+5. Run the feature-count command when producing feature-number curves.
+6. Generate figures only from the CSV artifacts written by the completed run.
+7. Record the git commit, input SHA-256 from `run_metadata.json`, and output directory
    in the manuscript analysis log.
 
 Repository-level checks are:
@@ -317,20 +408,13 @@ pytest -q
 python tools/write_checksums.py --check
 ```
 
-The historical scripts are retained outside this public package and were not modified.
-This repository does **not** claim exact numerical reproduction of historical figures
-whose values were affected by participant leakage, global preprocessing, or post-hoc
-random-state selection. It provides a corrected, auditable analysis. See
-[`docs/LEGACY_CODE_AUDIT.md`](docs/LEGACY_CODE_AUDIT.md),
-[`docs/MIGRATION_MAP.md`](docs/MIGRATION_MAP.md), and
-[`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md).
-
 ## Reproducibility policy
 
-- Cross-validation folds are deterministic and participant-grouped.
+- Holdout and cross-validation partitions are participant-grouped.
 - A single declared estimator random state is used only where a stochastic algorithm
   requires reproducible fitting; it is never searched or selected using performance.
-- Preprocessing and feature selection are part of each fitted pipeline.
+- Preprocessing is part of each fitted pipeline; feature-count ranking is fitted
+  independently inside each training fold.
 - All models within a task receive the same outer splits.
 - Saved full-data models are deployment candidates, not evidence of validation
   performance.

@@ -7,7 +7,6 @@ import ast
 import re
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED = {
     "README.md",
@@ -19,7 +18,13 @@ REQUIRED = {
     "src/nanoheldi_ml/data.py",
     "src/nanoheldi_ml/models.py",
     "src/nanoheldi_ml/evaluation.py",
+    "src/nanoheldi_ml/feature_analysis.py",
+    "src/nanoheldi_ml/manuscript_evaluation.py",
+    "src/nanoheldi_ml/manuscript_plotting.py",
+    "src/nanoheldi_ml/interpretability.py",
     "src/nanoheldi_ml/cli.py",
+    "scripts/run_feature_count_analysis.py",
+    "scripts/run_interpretability.py",
     "tests/test_grouped_evaluation.py",
     "docs/legacy_code_inventory.csv",
 }

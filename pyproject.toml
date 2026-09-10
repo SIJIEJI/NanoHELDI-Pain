@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanoheldi-ml"
-version = "0.1.0"
+version = "0.2.0"
 description = "Leakage-resistant grouped machine-learning workflows for NanoHELDI-MS pain studies"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -20,11 +20,14 @@ dependencies = [
 
 [project.optional-dependencies]
 xgboost = ["xgboost>=2.0,<4"]
+explain = ["shap>=0.44,<1"]
 dev = ["pytest>=7,<9", "ruff>=0.6,<1"]
 
 [project.scripts]
 nanoheldi-evaluate = "nanoheldi_ml.cli:main"
 nanoheldi-plot = "nanoheldi_ml.plotting:main"
+nanoheldi-manuscript-plot = "nanoheldi_ml.manuscript_plotting:main"
+nanoheldi-explain = "nanoheldi_ml.interpretability:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

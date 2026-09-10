@@ -1,0 +1,24 @@
+{
+  "task": "classification",
+  "protocol": "participant-level 80:20 holdout with grouped CV in training data",
+  "participant_column": "participant_id",
+  "sample_column": "sample_id",
+  "feature_prefix": "mz_",
+  "test_fraction": 0.2,
+  "training_cv_folds": 10,
+  "primary_model_selection_metric": "macro_ovr_auc",
+  "models": [
+    "Random",
+    "NB",
+    "DT",
+    "LR",
+    "GB",
+    "SVM",
+    "RF",
+    "AdaBoost",
+    "KNN",
+    "MLP",
+    "XGBoost"
+  ],
+  "random_state_policy": "one declared state for reproducibility; never searched"
+}

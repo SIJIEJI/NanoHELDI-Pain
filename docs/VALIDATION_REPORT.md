@@ -2,7 +2,7 @@
 
 ## Material Passport
 
-- Material ID: `nanoheldi-release-validation-2026-09-09`
+- Material ID: `nanoheldi-release-validation-2026-09-10`
 - Type: synthetic reproducibility validation
 - Verification status: `VERIFIED`
 - Source scope: generated non-biological data only
@@ -16,12 +16,18 @@ NumPy 1.26.4, pandas 2.1.4, scikit-learn 1.2.2, Matplotlib 3.7.2, and joblib 1.2
 A clean environment was also tested with NumPy 2.4.6, pandas 2.3.3,
 scikit-learn 1.9.0, Matplotlib 3.11.1, and joblib 1.6.0.
 
-- Four automated tests passed.
+- Nine automated tests passed in both supported scikit-learn environments.
 - Participant overlap was zero in every classification and regression fold.
-- All nine classification model families, including optional XGBoost, completed
-  five-fold grouped evaluation.
-- Forty-five classification fold-specific model bundles were saved and reloaded.
+- The manuscript classification workflow completed an 80:20 participant-level
+  holdout with all ten supervised model families, the random baseline, optional
+  XGBoost, and 10 grouped training folds.
+- The validation run produced 110 fold-metric rows, 11 independent-test metric rows,
+  and 11 loadable training-only model bundles.
 - Regression produced MAE, RMSE, conventional R², and ±2 accuracy.
+- Fold-local ANOVA F/mutual-information feature-count analysis handled missing values
+  and saved every selected feature and fold score.
+- SHAP and integrated gradients completed against a frozen MLP and its designated test
+  rows, producing per-sample and aggregate feature-attribution files.
 - PNG, PDF, SVG, and 600-dpi LZW-compressed TIFF plots were generated.
 - A non-empty output directory was confirmed to be protected from overwriting.
 - A Python wheel was built successfully from `pyproject.toml`.
@@ -30,6 +36,6 @@ scikit-learn 1.9.0, Matplotlib 3.11.1, and joblib 1.6.0.
   regression demo completed in 1.0--1.2 seconds. Initial figure export took 10 seconds
   while Matplotlib built its font cache and 0.7 seconds thereafter.
 
-This verifies software behavior, not scientific performance. Corrected estimates on the
-study data remain author-controlled because the public package intentionally excludes
-participant-level records.
+This verifies software behavior on synthetic data, not scientific performance on the
+study cohort. Study-level estimates require the participant-level analysis table,
+which is not included in this repository.

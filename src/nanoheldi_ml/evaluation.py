@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 import platform
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 import joblib
 import numpy as np
@@ -30,12 +30,11 @@ from .data import AnalysisData, assert_no_group_overlap
 
 def prepare_output_directory(path: str | Path) -> Path:
     output = Path(path).expanduser().resolve()
-    if output.exists():
-        if not output.is_dir() or any(output.iterdir()):
-            raise FileExistsError(
-                f"Output path is not an empty directory: {output}. "
-                "Choose a new path to preserve prior runs."
-            )
+    if output.exists() and (not output.is_dir() or any(output.iterdir())):
+        raise FileExistsError(
+            f"Output path is not an empty directory: {output}. "
+            "Choose a new path to preserve prior runs."
+        )
     output.mkdir(parents=True, exist_ok=True)
     return output
 
@@ -97,7 +96,7 @@ def _write_common_outputs(
     for model_name, subset in fold_metrics.groupby("model", sort=False):
         row = {
             "model": model_name,
-            "n_folds": int(len(subset)),
+            "n_folds": len(subset),
             "n_participants": int(metadata["n_participants"]),
             "n_observations": int(metadata["n_observations"]),
         }
@@ -119,10 +118,10 @@ def _write_common_outputs(
 
 def _base_metadata(data: AnalysisData, task: str, target: str, n_splits: int) -> dict:
     return {
-        "analysis_version": "0.1.0",
+        "analysis_version": "0.2.0",
         "task": task,
         "target": target,
-        "n_observations": int(len(data.y)),
+        "n_observations": len(data.y),
         "n_participants": int(np.unique(data.groups).size),
         "n_input_features": int(data.X.shape[1]),
         "n_splits_requested": int(n_splits),
@@ -200,9 +199,11 @@ def evaluate_classification(
                     "fold": fold_number,
                     "accuracy": accuracy_score(y[test_index], prediction),
                     "balanced_accuracy": balanced_accuracy_score(y[test_index], prediction),
-                    "macro_f1": f1_score(y[test_index], prediction, average="macro", zero_division=0),
-                    "n_train": int(len(train_index)),
-                    "n_validation": int(len(test_index)),
+                    "macro_f1": f1_score(
+                        y[test_index], prediction, average="macro", zero_division=0
+                    ),
+                    "n_train": len(train_index),
+                    "n_validation": len(test_index),
                     "n_train_participants": int(np.unique(data.groups[train_index]).size),
                     "n_validation_participants": int(np.unique(data.groups[test_index]).size),
                     "participant_overlap": 0,
@@ -323,8 +324,8 @@ def evaluate_regression(
                     "r2": r2_score(y[test_index], prediction),
                     "within_tolerance_accuracy": float(np.mean(errors <= tolerance)),
                     "tolerance": float(tolerance),
-                    "n_train": int(len(train_index)),
-                    "n_validation": int(len(test_index)),
+                    "n_train": len(train_index),
+                    "n_validation": len(test_index),
                     "n_train_participants": int(np.unique(data.groups[train_index]).size),
                     "n_validation_participants": int(np.unique(data.groups[test_index]).size),
                     "participant_overlap": 0,

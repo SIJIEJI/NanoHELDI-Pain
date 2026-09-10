@@ -2,7 +2,9 @@
 
 Participant-level data are not included in this repository.
 
-Prepare one CSV row per biological observation after averaging technical replicates:
+Prepare the deidentified observation-level CSV used by the prespecified analysis. If
+technical replicates are retained as separate rows, assign them the same
+`participant_id` so they remain in one evaluation partition:
 
 | Column | Required | Description |
 |---|---:|---|

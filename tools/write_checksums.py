@@ -7,7 +7,6 @@ import argparse
 from hashlib import sha256
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "CHECKSUMS.sha256"
 EXCLUDED_PARTS = {

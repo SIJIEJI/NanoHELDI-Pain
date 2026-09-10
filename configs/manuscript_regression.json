@@ -1,0 +1,13 @@
+{
+  "task": "regression",
+  "protocol": "participant-level 80:20 holdout with grouped CV in training data",
+  "participant_column": "participant_id",
+  "sample_column": "sample_id",
+  "feature_prefix": "mz_",
+  "test_fraction": 0.2,
+  "training_cv_folds": 10,
+  "tolerance": 2.0,
+  "primary_model_selection_metric": "mean_absolute_error",
+  "models": ["Mean", "MLP"],
+  "random_state_policy": "one declared state for reproducibility; never searched"
+}

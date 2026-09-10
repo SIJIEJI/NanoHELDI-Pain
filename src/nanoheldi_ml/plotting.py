@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-
 MODEL_COLORS = {
     "Random": "#B7B7B7",
     "Mean": "#B7B7B7",
@@ -22,6 +21,8 @@ MODEL_COLORS = {
     "GB": "#E7635F",
     "SVM": "#3E6DA5",
     "RF": "#64A85D",
+    "AdaBoost": "#8C75B8",
+    "KNN": "#C88A35",
     "XGBoost": "#9A685B",
     "MLP": "#F4A52F",
 }

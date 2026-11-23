@@ -3,6 +3,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+import pytest
 
 from nanoheldi_ml.data import load_analysis_table
 from nanoheldi_ml.feature_analysis import classification_feature_curve
@@ -72,13 +73,12 @@ def test_manuscript_classification_has_isolated_test_set_and_artifacts(
         models,
         tmp_path / "classification_run",
         "target",
-        training_cv_folds=3,
     )
     holdout = pd.read_csv(output / "holdout_assignments.csv")
     _assert_disjoint(holdout, "train", "test")
     folds = pd.read_csv(output / "training_cv_fold_metrics.csv")
     assert folds["participant_overlap"].eq(0).all()
-    assert len(folds) == 3
+    assert set(folds["fold"]) == {1, 2, 3, 4, 5}
     assert (output / "test_roc_curves.csv").is_file()
     assert (output / "test_confusion_matrices.csv").is_file()
     artifact = joblib.load(output / "models" / "LR.joblib")
@@ -118,13 +118,23 @@ def test_manuscript_regression_saves_training_and_test_predictions(tmp_path: Pat
         models,
         tmp_path / "regression_run",
         "pain_score",
-        training_cv_folds=3,
     )
     holdout = pd.read_csv(output / "holdout_assignments.csv")
     _assert_disjoint(holdout, "train", "test")
     assert (output / "training_cv_predictions.csv").is_file()
     assert (output / "training_cv_assignments.csv").is_file()
     assert (output / "test_predictions.csv").is_file()
+    folds = pd.read_csv(output / "training_cv_fold_metrics.csv")
+    assert set(folds["fold"]) == {1, 2, 3, 4, 5}
+
+
+def test_manuscript_rejects_an_alternate_training_fold_count(tmp_path: Path) -> None:
+    data = load_analysis_table(_write_table(tmp_path / "classification.csv"), "target")
+    with pytest.raises(ValueError, match="exactly 5"):
+        evaluate_manuscript_classification(
+            data, {}, tmp_path / "invalid", "target", training_cv_folds=6
+        )
+    assert not (tmp_path / "invalid").exists()
 
 
 def test_integrated_gradients_uses_the_fitted_pipeline(tmp_path: Path) -> None:

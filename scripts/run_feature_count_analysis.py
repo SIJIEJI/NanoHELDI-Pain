@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 
+from nanoheldi_ml.config import DEFAULT_N_SPLITS, SUPPORTED_CV_FOLDS
 from nanoheldi_ml.data import load_analysis_table
 from nanoheldi_ml.feature_analysis import (
     classification_feature_curve,
@@ -19,7 +20,7 @@ def main() -> None:
     parser.add_argument("--target", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--counts", nargs="+", type=int, required=True)
-    parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument("--folds", type=int, default=DEFAULT_N_SPLITS, choices=SUPPORTED_CV_FOLDS)
     parser.add_argument("--tolerance", type=float, default=2.0)
     parser.add_argument("--participant-column", default="participant_id")
     parser.add_argument("--sample-column", default="sample_id")

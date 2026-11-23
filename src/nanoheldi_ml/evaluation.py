@@ -24,7 +24,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
 from sklearn.preprocessing import LabelEncoder
 
-from .config import REPRODUCIBILITY_RANDOM_STATE
+from .config import REPRODUCIBILITY_RANDOM_STATE, validate_cv_folds
 from .data import AnalysisData, assert_no_group_overlap
 
 
@@ -156,6 +156,7 @@ def evaluate_classification(
     n_splits: int = 5,
     save_models: bool = True,
 ) -> Path:
+    validate_cv_folds(n_splits)
     output = prepare_output_directory(output)
     encoder = LabelEncoder()
     y = encoder.fit_transform(data.y)
@@ -286,6 +287,7 @@ def evaluate_regression(
     tolerance: float = 2.0,
     save_models: bool = True,
 ) -> Path:
+    validate_cv_folds(n_splits)
     output = prepare_output_directory(output)
     y = pd.to_numeric(data.y, errors="raise").to_numpy(float)
     splits = _regression_splits(data.X, data.groups, n_splits)

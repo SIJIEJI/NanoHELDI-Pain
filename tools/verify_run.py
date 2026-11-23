@@ -82,6 +82,13 @@ def verify_manuscript_run(run: Path, metadata: dict) -> None:
         raise FileNotFoundError(f"Missing run files: {missing}")
 
     folds = pd.read_csv(run / "training_cv_fold_metrics.csv")
+    expected_folds = {1, 2, 3, 4, 5}
+    if (metadata.get("training_cv_folds_requested"), metadata.get("training_cv_folds_used")) != (5, 5):
+        raise RuntimeError("The manuscript protocol requires five grouped training folds")
+    if set(folds["model"]) != set(metadata["models"]) or any(
+        set(rows["fold"]) != expected_folds or len(rows) != 5 for _, rows in folds.groupby("model")
+    ):
+        raise RuntimeError("Expected one row per model for each of the five training folds")
     if not folds["participant_overlap"].eq(0).all():
         raise RuntimeError("Non-zero participant overlap recorded")
     holdout = pd.read_csv(run / "holdout_assignments.csv")
@@ -95,6 +102,8 @@ def verify_manuscript_run(run: Path, metadata: dict) -> None:
         raise RuntimeError("Participant overlap detected between training and test sets")
 
     assignments = pd.read_csv(run / "training_cv_assignments.csv")
+    if set(assignments["fold"]) != expected_folds:
+        raise RuntimeError("Missing or unexpected training fold in the assignment table")
     for fold in assignments["fold"].unique():
         subset = assignments[assignments["fold"].eq(fold)]
         train = set(

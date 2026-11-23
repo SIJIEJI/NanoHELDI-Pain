@@ -26,7 +26,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import GroupKFold, GroupShuffleSplit, StratifiedGroupKFold
 from sklearn.preprocessing import LabelEncoder, label_binarize
 
-from .config import REPRODUCIBILITY_RANDOM_STATE
+from .config import DEFAULT_N_SPLITS, REPRODUCIBILITY_RANDOM_STATE
 from .data import AnalysisData, assert_no_group_overlap
 from .evaluation import prepare_output_directory
 
@@ -132,6 +132,14 @@ def _regression_cv_splits(
     return splits
 
 
+def _require_manuscript_folds(count: int) -> None:
+    if count != DEFAULT_N_SPLITS:
+        raise ValueError(
+            f"The manuscript protocol requires exactly {DEFAULT_N_SPLITS} grouped training folds "
+            f"(received {count})."
+        )
+
+
 def _score_matrix(fitted, X: pd.DataFrame, n_classes: int) -> np.ndarray:
     if hasattr(fitted, "predict_proba"):
         raw = np.asarray(fitted.predict_proba(X), dtype=float)
@@ -194,11 +202,11 @@ def evaluate_manuscript_classification(
     output: str | Path,
     target_name: str,
     test_fraction: float = 0.2,
-    training_cv_folds: int = 10,
+    training_cv_folds: int = DEFAULT_N_SPLITS,
     save_models: bool = True,
 ) -> Path:
     """Evaluate classification using a subject-level 80:20 holdout and training-only CV."""
-    output = prepare_output_directory(output)
+    _require_manuscript_folds(training_cv_folds)
     encoder = LabelEncoder()
     y = encoder.fit_transform(data.y)
     n_classes = len(encoder.classes_)
@@ -211,6 +219,8 @@ def evaluate_manuscript_classification(
     cv_splits = _classification_cv_splits(
         X_train, y_train, groups_train, training_cv_folds
     )
+    _require_manuscript_folds(len(cv_splits))
+    output = prepare_output_directory(output)
 
     fold_rows: list[dict] = []
     cv_prediction_rows: list[dict] = []
@@ -431,12 +441,12 @@ def evaluate_manuscript_regression(
     output: str | Path,
     target_name: str,
     test_fraction: float = 0.2,
-    training_cv_folds: int = 10,
+    training_cv_folds: int = DEFAULT_N_SPLITS,
     tolerance: float = 2.0,
     save_models: bool = True,
 ) -> Path:
     """Evaluate regression using a subject-level 80:20 holdout and training-only CV."""
-    output = prepare_output_directory(output)
+    _require_manuscript_folds(training_cv_folds)
     y = pd.to_numeric(data.y, errors="raise").to_numpy(float)
     outer_train, outer_test, holdout_method = _regression_holdout(
         data.X, y, data.groups, test_fraction
@@ -445,6 +455,8 @@ def evaluate_manuscript_regression(
     y_train = y[outer_train]
     groups_train = data.groups[outer_train]
     cv_splits = _regression_cv_splits(X_train, groups_train, training_cv_folds)
+    _require_manuscript_folds(len(cv_splits))
+    output = prepare_output_directory(output)
     fold_rows: list[dict] = []
     cv_prediction_rows: list[dict] = []
     cv_assignment_rows: list[dict] = []

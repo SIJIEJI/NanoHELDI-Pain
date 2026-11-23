@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from nanoheldi_ml.config import DEFAULT_N_SPLITS, SUPPORTED_CV_FOLDS
 from nanoheldi_ml.data import load_analysis_table
 from nanoheldi_ml.evaluation import evaluate_classification
 from nanoheldi_ml.models import classification_models
@@ -21,7 +22,7 @@ def main() -> None:
     parser.add_argument("--targets", nargs="+", required=True)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--features", type=int, default=50)
-    parser.add_argument("--folds", type=int, default=5)
+    parser.add_argument("--folds", type=int, default=DEFAULT_N_SPLITS, choices=SUPPORTED_CV_FOLDS)
     parser.add_argument("--participant-column", default="participant_id")
     parser.add_argument("--sample-column", default="sample_id")
     parser.add_argument("--feature-prefix", default="mz_")

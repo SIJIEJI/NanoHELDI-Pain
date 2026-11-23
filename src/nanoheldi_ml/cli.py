@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from .config import DEFAULT_N_FEATURES, DEFAULT_N_SPLITS
+from .config import DEFAULT_N_FEATURES, DEFAULT_N_SPLITS, SUPPORTED_CV_FOLDS
 from .data import load_analysis_table
 from .evaluation import evaluate_classification, evaluate_regression, select_models
 from .manuscript_evaluation import (
@@ -26,7 +26,7 @@ def common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sample-column", default="sample_id")
     parser.add_argument("--feature-prefix", default="mz_")
     parser.add_argument("--features", type=int, default=DEFAULT_N_FEATURES)
-    parser.add_argument("--folds", type=int, default=DEFAULT_N_SPLITS)
+    parser.add_argument("--folds", type=int, default=DEFAULT_N_SPLITS, choices=SUPPORTED_CV_FOLDS)
     parser.add_argument("--output", required=True)
     parser.add_argument("--models", nargs="*", help="Optional subset of model names")
     parser.add_argument(
@@ -43,7 +43,9 @@ def manuscript_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--sample-column", default="sample_id")
     parser.add_argument("--feature-prefix", default="mz_")
     parser.add_argument("--test-fraction", type=float, default=0.2)
-    parser.add_argument("--training-cv-folds", type=int, default=10)
+    parser.add_argument(
+        "--training-cv-folds", type=int, default=DEFAULT_N_SPLITS, choices=[DEFAULT_N_SPLITS]
+    )
     parser.add_argument("--output", required=True)
     parser.add_argument("--models", nargs="*", help="Optional subset of model names")
     parser.add_argument("--no-save-models", action="store_true")
@@ -65,14 +67,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     manuscript_classification = subparsers.add_parser(
         "manuscript-classification",
-        help="Subject-level 80:20 holdout with training-only 10-fold CV and ROC/AUC",
+        help="Subject-level 80:20 holdout with training-only five-fold CV and ROC/AUC",
     )
     manuscript_arguments(manuscript_classification)
     manuscript_classification.add_argument("--include-xgboost", action="store_true")
 
     manuscript_regression = subparsers.add_parser(
         "manuscript-regression",
-        help="Subject-level 80:20 holdout with training-only grouped CV",
+        help="Subject-level 80:20 holdout with training-only five-fold grouped CV",
     )
     manuscript_arguments(manuscript_regression)
     manuscript_regression.add_argument("--tolerance", type=float, default=2.0)

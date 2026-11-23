@@ -12,10 +12,9 @@ to the same training data.
 ## Manuscript classification protocol
 
 Classification uses a participant-disjoint 80:20 training/test partition. Candidate
-models are compared using up to 10 folds of `StratifiedGroupKFold` within the training
-partition. The code reduces the fold count only when the available participants or
-class counts cannot support the requested value. All models use identical saved fold
-assignments.
+models are compared using five folds of `StratifiedGroupKFold` within the training
+partition. All models use identical saved participant assignments. The manuscript
+command raises an error if the training data cannot support five folds.
 
 The model set contains a stratified random baseline, Gaussian naive Bayes, decision
 tree, logistic regression, gradient boosting, support-vector machine, random forest,
@@ -32,7 +31,7 @@ scores, ROC coordinates, and confusion matrices.
 ## Manuscript regression protocol
 
 Continuous pain outcomes use a participant-disjoint 80:20 training/test partition and
-up to 10 folds of grouped cross-validation within the training partition. Regression
+five folds of grouped cross-validation within the training partition. Regression
 reports mean absolute error, root mean squared error, conventional R², and the fraction
 of predictions within the prespecified ±2-unit tolerance. The tolerance metric is
 reported alongside, not instead of, continuous-error metrics.

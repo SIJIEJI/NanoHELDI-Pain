@@ -5,7 +5,7 @@ tests, and a small synthetic dataset for the NanoHELDI-MS pain-study machine-lea
 workflow. No compiled binary is required.
 
 The manuscript workflow uses a participant-level 80:20 train/test partition followed
-by grouped cross-validation within the training partition. Imputation, scaling, and
+by five-fold grouped cross-validation within the training partition. Imputation, scaling, and
 feature ranking are fitted from training data only. Split assignments, fold-level
 scores, test predictions, ROC coordinates, confusion matrices, fitted pipelines,
 software versions, and input hashes are saved for inspection.
@@ -128,7 +128,7 @@ nanoheldi-evaluate classification \
   --input examples/data/synthetic_classification.csv \
   --target target \
   --features 10 \
-  --folds 3 \
+  --folds 5 \
   --models LR MLP \
   --output results/classification_demo
 
@@ -145,7 +145,7 @@ Saved validated outputs to .../results/classification_demo
 Saved plot files with stem .../results/classification_demo/model_comparison
 ```
 
-The reference run produced mean balanced accuracies of 0.875 for LR and 0.8125 for
+The reference run produced mean balanced accuracies of 0.7833 for LR and 0.7583 for
 MLP. These values test the installation only and must not be interpreted as scientific
 results.
 
@@ -156,13 +156,13 @@ nanoheldi-evaluate regression \
   --input examples/data/synthetic_regression.csv \
   --target pain_score \
   --features 10 \
-  --folds 3 \
+  --folds 5 \
   --models MLP \
   --output results/regression_demo
 ```
 
-The reference run produced an MLP mean RMSE of approximately 1.22 and an R² of
-approximately 0.76. Small last-decimal differences between supported dependency
+The reference run produced an MLP mean RMSE of approximately 1.28 and a mean R² of
+approximately 0.68. Small last-decimal differences between supported dependency
 versions are acceptable.
 
 ### Expected files
@@ -182,8 +182,8 @@ models/<model>/final_full_data.joblib
 ```
 
 The plotting command additionally creates `.png`, `.pdf`, `.svg`, and `.tiff` files.
-The classification demo saves eight model artifacts: three folds plus one full-data
-candidate for each of LR and MLP.
+The classification demo saves twelve model artifacts, comprising five fold models and
+one full-data candidate for each of LR and MLP.
 
 ### Expected demo runtime
 
@@ -191,9 +191,9 @@ Times below were measured on the tested Apple Silicon desktop with Python 3.11.5
 
 | Demo step | Observed wall time | Typical desktop allowance |
 |---|---:|---:|
-| Classification: LR + MLP, 3 folds | 1.0–1.2 s | under 1 min |
+| Classification, LR + MLP, 5 folds | 1.4 s | under 1 min |
 | Four-format figure export | 0.7 s after font cache; 10 s on a clean cache | under 1 min |
-| Regression: MLP, 3 folds | 1.0–1.2 s | under 1 min |
+| Regression, MLP, 5 folds | 1.4 s | under 1 min |
 
 To regenerate the included synthetic files in another directory without replacing the
 repository copies:
@@ -220,6 +220,9 @@ sample_id,participant_id,target,mz_124.97,mz_129.06,...
 - `sample_id` must identify a row uniquely.
 - `participant_id` is mandatory. All observations from one participant remain in the
   same fold, including repeated visits.
+- Check the sample-to-participant mapping against the acquisition records. If identical
+  spectra appear under different IDs, resolve their provenance before interpreting
+  participant-held-out performance.
 - The target may contain class labels for classification or numeric values for
   regression.
 - Feature columns must be numeric and begin with `mz_` by default. Use
@@ -232,7 +235,7 @@ See [`data/README.md`](data/README.md) for validation rules and privacy guidance
 ### Manuscript classification protocol
 
 This command uses all supplied `mz_` features, creates a participant-disjoint 80:20
-training/test partition, and compares the requested models by 10-fold grouped
+training/test partition, and compares the requested models by five-fold grouped
 cross-validation in the training partition. The independent test partition is scored
 only after model fitting. Install the `xgboost` extra to include the complete candidate
 set used by this command.
@@ -242,7 +245,7 @@ nanoheldi-evaluate manuscript-classification \
   --input data/deidentified_analysis.csv \
   --target headache \
   --test-fraction 0.2 \
-  --training-cv-folds 10 \
+  --training-cv-folds 5 \
   --include-xgboost \
   --output results/headache_manuscript
 
@@ -262,7 +265,7 @@ nanoheldi-evaluate manuscript-regression \
   --input data/deidentified_analysis.csv \
   --target headache_severity \
   --test-fraction 0.2 \
-  --training-cv-folds 10 \
+  --training-cv-folds 5 \
   --models MLP \
   --tolerance 2 \
   --output results/headache_severity_manuscript
@@ -314,8 +317,9 @@ nanoheldi-explain \
 
 ### General grouped-CV interface
 
-The original interface remains available for analyses that require a user-specified
-feature count and grouped cross-validation without a separate test partition:
+The general interface uses five grouped folds by default and accepts two through five
+for small diagnostic runs. It supports a user-specified feature count without a
+separate test partition:
 
 ```bash
 nanoheldi-evaluate classification \

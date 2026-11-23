@@ -22,7 +22,7 @@ jobs:
           --input examples/data/synthetic_classification.csv
           --target target
           --features 10
-          --folds 3
+          --folds 5
           --models LR MLP
           --output results/ci_classification
       - run: >-
@@ -34,7 +34,7 @@ jobs:
           nanoheldi-evaluate manuscript-classification
           --input examples/data/synthetic_classification.csv
           --target target
-          --training-cv-folds 3
+          --training-cv-folds 5
           --models LR MLP
           --output results/ci_manuscript_classification
       - run: >-
@@ -47,6 +47,6 @@ jobs:
           --input examples/data/synthetic_classification.csv
           --target target
           --counts 5 10
-          --folds 3
+          --folds 5
           --output results/ci_feature_curve
       - run: pytest -q

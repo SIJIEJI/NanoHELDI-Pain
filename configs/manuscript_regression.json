@@ -5,7 +5,7 @@
   "sample_column": "sample_id",
   "feature_prefix": "mz_",
   "test_fraction": 0.2,
-  "training_cv_folds": 10,
+  "training_cv_folds": 5,
   "tolerance": 2.0,
   "primary_model_selection_metric": "mean_absolute_error",
   "models": ["Mean", "MLP"],

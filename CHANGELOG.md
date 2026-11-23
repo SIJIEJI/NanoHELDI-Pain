@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Standardized the manuscript classification and regression workflows on five grouped
+  training folds within the participant-level holdout. Updated demo commands,
+  configuration files, CI and result verification to match.
+
 ## 0.2.0 — 2026-09-10
 
 - Added a participant-level 80:20 holdout protocol with grouped training-only
